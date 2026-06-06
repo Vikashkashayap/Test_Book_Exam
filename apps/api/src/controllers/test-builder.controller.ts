@@ -1,0 +1,220 @@
+import { Response } from 'express';
+import { AuthRequest } from '../middleware/auth';
+import { asyncHandler } from '../utils/asyncHandler';
+import { ApiError } from '../utils/ApiError';
+import { getExamPatternProfile } from '../lib/exams/examProfiles';
+import { buildTestPattern } from '../lib/exams/testBuilder';
+import { formatNegativeMarkingLabel } from '../lib/exams/scoring';
+import { Exam } from '../models/Exam';
+import {
+  scheduleOrCreateMock,
+  getBankAvailability,
+  listAdminMocks,
+  deleteAdminMock,
+} from '../services/test-builder.service';
+import {
+  createTestFromBankSchema,
+  examPatternQuerySchema,
+} from '../validators/test-builder.validator';
+
+export const getExamPattern = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const parsed = examPatternQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    throw new ApiError(400, parsed.error.errors.map((e) => e.message).join(', '));
+  }
+
+  const exam = await Exam.findById(parsed.data.examId).populate('categoryId', 'slug name');
+  if (!exam) throw new ApiError(404, 'Exam not found');
+
+  const categorySlug =
+    (exam.categoryId as { slug?: string } | null)?.slug ?? exam.categorySlug;
+
+  const selectedSubjects = parsed.data.subject
+    ? [parsed.data.subject]
+    : undefined;
+
+  const pattern = buildTestPattern({
+    examSlug: exam.slug,
+    categorySlug,
+    examName: exam.name,
+    mockType: parsed.data.mockType,
+    selectedSubjects,
+  });
+
+  const profile = getExamPatternProfile(exam.slug, categorySlug, exam.name);
+
+  res.json({
+    success: true,
+    data: {
+      examSlug: exam.slug,
+      examName: exam.name,
+      mockType: pattern.mockType,
+      pattern: {
+        totalQuestions: pattern.totalQuestions,
+        totalMarks: pattern.totalMarks,
+        durationMinutes: pattern.durationMinutes,
+        negativeMarking: pattern.negativeMarking,
+        negativeMarkingLabel: formatNegativeMarkingLabel(
+          profile.negativeMarking,
+          pattern.marksPerQuestion
+        ),
+        hasTimer: pattern.hasTimer,
+        difficulty: pattern.difficulty,
+        questionStyle: profile.pattern,
+        questionStyles: pattern.questionStyles,
+        sections: pattern.sectionDistribution.map((s) => ({
+          name: s.subject,
+          questionCount: s.questionCount,
+          marksPerQuestion: s.marksPerQuestion,
+          negativeMarks: s.negativeMarks,
+        })),
+        subjects: pattern.subjects,
+        instructions: pattern.instructions,
+      },
+    },
+  });
+});
+
+export const getTestBuilderSubjects = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { examId } = req.query;
+  if (!examId || typeof examId !== 'string') {
+    throw new ApiError(400, 'examId is required');
+  }
+
+  const exam = await Exam.findById(examId).populate('categoryId', 'slug');
+  if (!exam) throw new ApiError(404, 'Exam not found');
+
+  const categorySlug =
+    (exam.categoryId as { slug?: string } | null)?.slug ?? exam.categorySlug;
+  const profile = getExamPatternProfile(exam.slug, categorySlug, exam.name);
+
+  res.json({
+    success: true,
+    data: {
+      examSlug: exam.slug,
+      subjects: profile.sections.map((s) => s.name),
+      sections: profile.sections,
+    },
+  });
+});
+
+export const getBankAvailabilityInfo = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { examId, subjects, difficulty } = req.query;
+  if (!examId || typeof examId !== 'string') {
+    throw new ApiError(400, 'examId is required');
+  }
+
+  const subjectList =
+    typeof subjects === 'string' ? subjects.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
+
+  const avoidReuse = req.query.avoidReuse === 'true';
+
+  const result = await getBankAvailability({
+    examId,
+    subjects: subjectList,
+    difficulty:
+      difficulty === 'easy' || difficulty === 'medium' || difficulty === 'hard' || difficulty === 'mixed'
+        ? difficulty
+        : undefined,
+    avoidReuse,
+  });
+
+  res.json({ success: true, data: result });
+});
+
+export const createTest = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const parsed = createTestFromBankSchema.safeParse(req.body);
+  if (!parsed.success) {
+    throw new ApiError(400, parsed.error.errors.map((e) => e.message).join(', '));
+  }
+
+  const result = await scheduleOrCreateMock({
+    ...parsed.data,
+    createdBy: req.user!.id,
+  });
+
+  if (result.scheduled && result.job) {
+    return res.status(201).json({
+      success: true,
+      data: {
+        job: {
+          _id: result.job._id,
+          title: result.job.title ?? `${result.job.examSlug} Mock Test`,
+          examSlug: result.job.examSlug,
+          subjects: result.job.subjects,
+          totalQuestions: result.job.questionCount,
+          duration: result.job.durationMinutes,
+          status: 'scheduled',
+          scheduledAt: result.job.scheduledAt,
+          createdAt: result.job.createdAt,
+        },
+        test: null,
+        questions: [],
+        questionsAutoGenerated: 0,
+        scheduled: true,
+        message: `Mock scheduled for ${new Date(result.job.scheduledAt).toLocaleString('en-IN')}. Questions will auto-generate using official exam pattern at that time.`,
+      },
+    });
+  }
+
+  res.status(201).json({
+    success: true,
+    data: {
+      test: {
+        _id: result.test!._id,
+        title: result.test!.title,
+        slug: result.test!.slug,
+        exam: result.test!.examSlug,
+        examSlug: result.test!.examSlug,
+        subjects: result.test!.subjects,
+        duration: result.test!.durationMinutes,
+        totalQuestions: result.test!.totalQuestions,
+        totalMarks: result.test!.totalMarks,
+        source: result.test!.source,
+        status: result.test!.status,
+        scheduledAt: result.test!.scheduledAt,
+        publishedAt: result.test!.publishedAt,
+        createdAt: result.test!.createdAt,
+      },
+      questions: result.questions,
+      questionsAutoGenerated: result.questionsAutoGenerated,
+      scheduled: false,
+      message: `Mock test published using official ${result.test!.examSlug} pattern! Students registered for this exam will see it on their dashboard.`,
+    },
+  });
+});
+
+export const listMocks = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { examId, difficulty, search, page, limit } = req.query;
+
+  const result = await listAdminMocks({
+    examId: typeof examId === 'string' ? examId : undefined,
+    difficulty: typeof difficulty === 'string' ? difficulty : undefined,
+    search: typeof search === 'string' ? search : undefined,
+    page: page ? Number(page) : 1,
+    limit: limit ? Number(limit) : 20,
+  });
+
+  res.json({
+    success: true,
+    data: result.mocks,
+    meta: {
+      page: result.page,
+      limit: result.limit,
+      total: result.total,
+      totalPages: Math.ceil(result.total / result.limit),
+    },
+  });
+});
+
+export const removeMock = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  const { type } = req.query;
+
+  if (type !== 'test' && type !== 'job') {
+    throw new ApiError(400, 'type must be test or job');
+  }
+
+  const result = await deleteAdminMock({ id, type });
+  res.json({ success: true, data: result });
+});
