@@ -36,8 +36,12 @@ export const SUBJECT_ALIASES: Record<string, string[]> = {
 
 export function normalizeMockType(type?: MockType): MockMode {
   if (type === 'practice_set') return 'practice_set';
-  if (type === 'full_length') return 'full_length';
+  if (type === 'full_length' || type === 'pyq') return 'full_length';
   return 'subject_test';
+}
+
+export function isPyqMockType(type?: MockType): boolean {
+  return type === 'pyq';
 }
 
 function defaultMarksPerQuestion(profile: ExamPatternProfile, section?: ExamSection): number {
@@ -82,12 +86,32 @@ function findSectionForSubject(
 function buildInstructions(
   profile: ExamPatternProfile,
   mode: MockMode,
-  sections: SectionBuildConfig[]
+  sections: SectionBuildConfig[],
+  options?: { isPyq?: boolean }
 ): string {
   const negLabel = formatNegativeMarkingLabel(
     profile.negativeMarking,
     profile.totalMarks / profile.totalQuestions
   );
+
+  if (options?.isPyq) {
+    const sectionLines = sections
+      .map((s) => `• ${s.subject}: ${s.questionCount} questions (${s.marksPerQuestion} marks each)`)
+      .join('\n');
+    return [
+      `Previous Year Paper (PYQ) — ${profile.name}`,
+      `Total Questions: ${profile.totalQuestions} | Total Marks: ${profile.totalMarks} | Duration: ${profile.durationMinutes} minutes`,
+      negLabel,
+      '',
+      'Section Distribution:',
+      sectionLines,
+      '',
+      'AI-generated questions in the style of official previous year papers.',
+      '• Each question has only ONE correct answer.',
+      '• Use the question palette to navigate. Mark for review if unsure.',
+      '• Test will auto-submit when the timer expires.',
+    ].join('\n');
+  }
 
   if (mode === 'practice_set') {
     return [
@@ -146,6 +170,7 @@ export function buildTestPattern(params: {
   selectedSubjects?: string[];
 }): BuiltTestPattern {
   const mode = normalizeMockType(params.mockType);
+  const isPyq = isPyqMockType(params.mockType);
   const profile = getExamPatternProfile(params.examSlug, params.categorySlug, params.examName);
 
   if (mode === 'practice_set') {
@@ -237,11 +262,10 @@ export function buildTestPattern(params: {
     };
   }
 
-  // full_length — exact official pattern
+  // full_length / pyq — exact official pattern
   const sectionDistribution = profile.sections.map((s) => buildSectionConfig(profile, s));
   const negEnabled = isNegativeMarkingEnabled(profile.negativeMarking);
   const defaultMarks = defaultMarksPerQuestion(profile);
-
   return {
     examSlug: params.examSlug,
     examName: params.examName,
@@ -258,7 +282,9 @@ export function buildTestPattern(params: {
     difficulty: profile.difficulty,
     pattern: profile.pattern,
     questionStyles: profile.questionStyles ?? [],
-    instructions: buildInstructions(profile, 'full_length', sectionDistribution),
+    instructions: buildInstructions(profile, 'full_length', sectionDistribution, {
+      isPyq,
+    }),
     hasTimer: true,
   };
 }

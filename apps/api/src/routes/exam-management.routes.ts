@@ -18,14 +18,22 @@ router.get('/exams/:examSlug/stats', requireInstructor, ctrl.getExamContentStats
 
 router.get('/tests', requireInstructor, ctrl.listExamTestsAdmin);
 router.post('/tests', requireInstructor, ctrl.createExamTest);
+router.patch('/tests/:id', requireInstructor, ctrl.updateExamTest);
 router.patch('/tests/:id/publish', requireInstructor, ctrl.publishExamTest);
 
 router.post('/upload', requireInstructor, pdfUpload.single('file'), ctrl.uploadPdfFile);
 
 router.get('/materials', requireInstructor, ctrl.listStudyMaterialsAdmin);
 router.post('/materials', requireInstructor, ctrl.uploadStudyMaterial);
+router.patch('/materials/:id', requireInstructor, ctrl.updateStudyMaterial);
+router.delete('/materials/:id', requireInstructor, ctrl.deleteStudyMaterial);
 
 router.get('/current-affairs', requireInstructor, ctrl.listCurrentAffairsAdmin);
 router.post('/current-affairs', requireInstructor, ctrl.uploadCurrentAffair);
+
+router.get('/blogs', requireInstructor, ctrl.listBlogsAdmin);
+router.post('/blogs', requireInstructor, ctrl.createBlog);
+router.patch('/blogs/:id', requireInstructor, ctrl.updateBlog);
+router.patch('/blogs/:id/publish', requireInstructor, ctrl.publishBlog);
 
 export default router;

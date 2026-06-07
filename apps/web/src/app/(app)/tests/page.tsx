@@ -90,7 +90,7 @@ export default function TestsPage() {
     { value: 'full_length', label: 'Full Length Mock' },
     { value: 'subject_wise', label: 'Subject Test' },
     { value: 'practice_set', label: 'Practice Set' },
-    { value: 'daily_quiz', label: 'Daily Quiz' },
+    // { value: 'daily_quiz', label: 'Daily Quiz' },
     { value: 'previous_year', label: 'Previous Year' },
     { value: 'completed', label: 'Completed' },
   ];

@@ -45,6 +45,9 @@ export interface ITest extends Document {
   createdBy: Types.ObjectId;
   clonedFrom?: Types.ObjectId;
   year?: number;
+  exam?: string;
+  isPublished: boolean;
+  showOnHomepage: boolean;
   instructions?: string;
   source?: 'manual' | 'AI' | 'import' | 'question_bank';
   subjects?: string[];
@@ -113,7 +116,10 @@ const TestSchema = new Schema<ITest>(
     attemptCount: { type: Number, default: 0 },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     clonedFrom: { type: Schema.Types.ObjectId, ref: 'Test' },
-    year: Number,
+    year: { type: Number, index: true },
+    exam: { type: String, trim: true },
+    isPublished: { type: Boolean, default: false, index: true },
+    showOnHomepage: { type: Boolean, default: false, index: true },
     instructions: String,
     source: { type: String, enum: ['manual', 'AI', 'import', 'question_bank'], default: 'manual' },
     subjects: [String],
@@ -125,5 +131,18 @@ const TestSchema = new Schema<ITest>(
 TestSchema.index({ status: 1, type: 1, publishedAt: -1 });
 TestSchema.index({ examCategoryId: 1, type: 1 });
 TestSchema.index({ examSlug: 1, status: 1 });
+TestSchema.index({ type: 1, isPublished: 1, showOnHomepage: 1, year: -1 });
+TestSchema.index({ categorySlug: 1, type: 1, isPublished: 1, showOnHomepage: 1 });
+
+TestSchema.pre('save', function syncPublishFields(next) {
+  if (this.status === 'published') {
+    this.isPublished = true;
+    if (!this.publishedAt) this.publishedAt = new Date();
+    if (this.type === 'previous_year' && this.showOnHomepage !== false) {
+      this.showOnHomepage = true;
+    }
+  }
+  next();
+});
 
 export const Test = mongoose.model<ITest>('Test', TestSchema);

@@ -33,7 +33,7 @@ export type NegativeMarkingRule =
 export type MockMode = 'full_length' | 'subject_test' | 'practice_set';
 
 /** API / legacy alias */
-export type MockType = MockMode | 'subject_based';
+export type MockType = MockMode | 'subject_based' | 'pyq';
 
 export interface ExamSection {
   name: string;

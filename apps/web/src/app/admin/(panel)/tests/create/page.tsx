@@ -21,7 +21,11 @@ const MOCK_TYPES = [
   { id: 'full_length' as const, label: 'Full Length', hint: 'Official pattern' },
   { id: 'subject_test' as const, label: 'Subject Test', hint: 'One subject' },
   { id: 'practice_set' as const, label: 'Practice Set', hint: '20 Q, no timer' },
+  { id: 'pyq' as const, label: 'PYQ (AI)', hint: 'Previous year paper' },
 ];
+
+const CURRENT_YEAR = new Date().getFullYear();
+const PYQ_YEARS = Array.from({ length: 10 }, (_, i) => CURRENT_YEAR - i);
 
 const DIFFICULTY_OPTIONS = [
   { value: 'easy' as const, label: 'Easy' },
@@ -70,7 +74,10 @@ function RadioOption({
 
 export default function ScheduleMockPage() {
   const [examId, setExamId] = useState('');
-  const [mockType, setMockType] = useState<'full_length' | 'subject_test' | 'practice_set'>('full_length');
+  const [mockType, setMockType] = useState<'full_length' | 'subject_test' | 'practice_set' | 'pyq'>('full_length');
+  const [pyqYear, setPyqYear] = useState(String(CURRENT_YEAR - 1));
+  const [generateAllYears, setGenerateAllYears] = useState(false);
+  const [generateAllExams, setGenerateAllExams] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState('');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | 'mixed'>('medium');
   const [title, setTitle] = useState('');
@@ -112,27 +119,37 @@ export default function ScheduleMockPage() {
   const mocks = mocksData?.mocks ?? [];
 
   useEffect(() => {
-    if (mockType === 'full_length') setSelectedSubject('');
+    if (mockType === 'full_length' || mockType === 'pyq') setSelectedSubject('');
   }, [mockType]);
 
+  const isPyq = mockType === 'pyq';
+
   async function handleCreate(schedule: boolean) {
-    if (!examId) { setMessage('Pehle exam select karo'); return; }
+    if (!generateAllExams && !examId) { setMessage('Pehle exam select karo'); return; }
     if (mockType === 'subject_test' && !selectedSubject) {
       setMessage('Subject select karo'); return;
     }
-    if (schedule && !scheduledAt) { setMessage('Date & time set karo'); return; }
+    if (isPyq && !generateAllYears && !pyqYear) {
+      setMessage('PYQ year select karo');
+      return;
+    }
+    if (!isPyq && schedule && !scheduledAt) { setMessage('Date & time set karo'); return; }
     setMessage('');
     try {
-      const res = await createTest.mutateAsync({
-        examId,
+      const payload = {
+        ...(generateAllExams ? {} : { examId }),
         subjects: mockType === 'subject_test' ? [selectedSubject] : undefined,
         difficulty,
         mockType,
         avoidReuse,
         autoGenerate: true,
         title: title.trim() || undefined,
-        scheduledAt: schedule ? new Date(scheduledAt).toISOString() : undefined,
-      });
+        scheduledAt: !isPyq && schedule ? new Date(scheduledAt).toISOString() : undefined,
+        year: isPyq && !generateAllYears ? Number(pyqYear) : undefined,
+        generateAllYears: isPyq ? generateAllYears : undefined,
+        generateAllExams: isPyq ? generateAllExams : undefined,
+      };
+      const res = await createTest.mutateAsync(payload);
       setMessage(res.data.message);
       if (schedule) { setScheduledAt(''); setTitle(''); }
     } catch (e) {
@@ -146,7 +163,7 @@ export default function ScheduleMockPage() {
       <div>
         <h1 className="text-lg font-bold">Schedule Mock</h1>
         <p className="text-xs text-muted-foreground">
-          Exam select karo — pattern auto load. Manual setup nahi chahiye.
+          Exam select karo — pattern auto load. PYQ (AI) se last 10 years ke questions bhi generate kar sakte ho.
         </p>
       </div>
 
@@ -252,6 +269,53 @@ export default function ScheduleMockPage() {
             </div>
           )}
 
+          {/* PYQ year + bulk options */}
+          {isPyq && (
+            <div className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2.5 space-y-2">
+              <p className="text-xs font-medium text-primary">
+                AI se PYQ generate — last 10 years ke style mein questions
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-medium text-muted-foreground whitespace-nowrap">Year</label>
+                  <select
+                    className="h-8 rounded-md border bg-background px-2 text-xs disabled:opacity-50"
+                    value={pyqYear}
+                    onChange={(e) => setPyqYear(e.target.value)}
+                    disabled={generateAllYears}
+                  >
+                    {PYQ_YEARS.map((y) => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+                <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={generateAllYears}
+                    onChange={(e) => setGenerateAllYears(e.target.checked)}
+                    className="rounded h-3.5 w-3.5 accent-primary"
+                  />
+                  All 10 years
+                </label>
+                <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={generateAllExams}
+                    onChange={(e) => setGenerateAllExams(e.target.checked)}
+                    className="rounded h-3.5 w-3.5 accent-primary"
+                  />
+                  All exams
+                </label>
+              </div>
+              {generateAllExams && (
+                <p className="text-[10px] text-muted-foreground">
+                  Har exam ke liye PYQ banega{generateAllYears ? ' (10 years × all exams)' : ` (${pyqYear})`}. Time lagega — AI generate karega.
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Difficulty + checkbox — inline row */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
@@ -279,33 +343,47 @@ export default function ScheduleMockPage() {
 
           {/* Schedule + actions — one row */}
           <div className="flex flex-wrap items-end gap-2 pt-1">
-            <div className="flex-1 min-w-[180px]">
-              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-0.5">
-                <Calendar className="h-3 w-3" /> Date & time (schedule)
-              </label>
-              <Input
-                type="datetime-local"
-                className="h-9 text-sm"
-                value={scheduledAt}
-                onChange={(e) => setScheduledAt(e.target.value)}
-              />
-            </div>
+            {!isPyq && (
+              <div className="flex-1 min-w-[180px]">
+                <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-0.5">
+                  <Calendar className="h-3 w-3" /> Date & time (schedule)
+                </label>
+                <Input
+                  type="datetime-local"
+                  className="h-9 text-sm"
+                  value={scheduledAt}
+                  onChange={(e) => setScheduledAt(e.target.value)}
+                />
+              </div>
+            )}
+            {!isPyq && (
+              <Button
+                size="sm"
+                className="h-9 px-4"
+                onClick={() => handleCreate(true)}
+                disabled={createTest.isPending || !examId || !scheduledAt}
+              >
+                {createTest.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Schedule Mock'}
+              </Button>
+            )}
             <Button
-              size="sm"
-              className="h-9 px-4"
-              onClick={() => handleCreate(true)}
-              disabled={createTest.isPending || !examId || !scheduledAt}
-            >
-              {createTest.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Schedule Mock'}
-            </Button>
-            <Button
-              variant="outline"
+              variant={isPyq ? 'default' : 'outline'}
               size="sm"
               className="h-9 px-4"
               onClick={() => handleCreate(false)}
-              disabled={createTest.isPending || !examId}
+              disabled={createTest.isPending || (!generateAllExams && !examId)}
             >
-              Publish Now
+              {createTest.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : isPyq ? (
+                generateAllYears && generateAllExams
+                  ? 'Generate All PYQs'
+                  : generateAllYears
+                    ? 'Generate 10 Years PYQ'
+                    : 'Generate PYQ'
+              ) : (
+                'Publish Now'
+              )}
             </Button>
           </div>
 

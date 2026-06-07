@@ -12,6 +12,10 @@ export const metadata: Metadata = {
   description:
     'Production-ready test series for SSC, Banking, Railway, Police, Defence, Teaching, UPSC & State PCS. AI mentor, PYQ, current affairs & personalized dashboard.',
   keywords: ['SSC CGL', 'Banking', 'UPSC', 'mock test', 'Testbook alternative', 'MentorsDaily'],
+  icons: {
+    icon: '/branding/md-icon.png',
+    apple: '/branding/md-icon.png',
+  },
   openGraph: {
     title: 'MentorsDaily ExamPrep Pro',
     description: 'Crack government exams with smart mocks & AI coaching',

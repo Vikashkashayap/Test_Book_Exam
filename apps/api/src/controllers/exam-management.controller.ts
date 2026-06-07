@@ -6,6 +6,7 @@ import { Exam } from '../models/Exam';
 import { Test } from '../models/Test';
 import { StudyMaterial } from '../models/StudyMaterial';
 import { CurrentAffair } from '../models/CurrentAffair';
+import { Blog } from '../models/Blog';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/ApiError';
 import { slugify } from '../utils/slugify';
@@ -158,11 +159,17 @@ export const createExamTest = asyncHandler(async (req: AuthRequest, res: Respons
     status,
     year,
     instructions,
+    negativeMarking,
+    showOnHomepage,
+    isPublished,
   } = req.body;
 
   const exam = await resolveExam(examId);
   const category = await ExamCategory.findById(exam.categoryId);
   if (!category) throw new ApiError(404, 'Category not found');
+
+  const publishNow = status === 'published' || isPublished === true;
+  const isPyq = (type ?? 'full_length') === 'previous_year';
 
   const test = await Test.create({
     title,
@@ -173,12 +180,17 @@ export const createExamTest = asyncHandler(async (req: AuthRequest, res: Respons
     examSlugs: [exam.slug],
     examCategoryId: category._id,
     categorySlug: category.slug,
+    exam: exam.name,
     questionIds: questionIds ?? [],
     totalQuestions: totalQuestions ?? questionIds?.length ?? 0,
     totalMarks: totalMarks ?? totalQuestions ?? 0,
     durationMinutes: durationMinutes ?? 60,
-    status: status ?? 'draft',
-    publishedAt: status === 'published' ? new Date() : undefined,
+    negativeMarking: negativeMarking ?? true,
+    status: publishNow ? 'published' : status ?? 'draft',
+    isPublished: publishNow,
+    showOnHomepage: showOnHomepage ?? (publishNow && isPyq),
+    isLive: publishNow,
+    publishedAt: publishNow ? new Date() : undefined,
     year,
     instructions,
     createdBy: req.user!.id,
@@ -188,10 +200,11 @@ export const createExamTest = asyncHandler(async (req: AuthRequest, res: Respons
 });
 
 export const listExamTestsAdmin = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { examSlug, status, page = 1, limit = 20 } = req.query;
+  const { examSlug, status, type, page = 1, limit = 20 } = req.query;
   const filter: Record<string, unknown> = {};
   if (examSlug) filter.examSlug = examSlug;
   if (status) filter.status = status;
+  if (type) filter.type = type;
 
   const skip = (Number(page) - 1) * Number(limit);
   const [tests, total] = await Promise.all([
@@ -212,11 +225,56 @@ export const listExamTestsAdmin = asyncHandler(async (req: AuthRequest, res: Res
 });
 
 export const publishExamTest = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const existing = await Test.findById(req.params.id);
+  if (!existing) throw new ApiError(404, 'Test not found');
+
+  const { showOnHomepage } = req.body ?? {};
+  const isPyq = existing.type === 'previous_year';
+
   const test = await Test.findByIdAndUpdate(
     req.params.id,
-    { status: 'published', publishedAt: new Date() },
+    {
+      status: 'published',
+      isPublished: true,
+      isLive: true,
+      publishedAt: new Date(),
+      showOnHomepage:
+        showOnHomepage !== undefined ? showOnHomepage : isPyq ? true : existing.showOnHomepage,
+    },
     { new: true }
   );
+
+  res.json({ success: true, data: test });
+});
+
+export const updateExamTest = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const allowed = [
+    'title',
+    'year',
+    'totalQuestions',
+    'totalMarks',
+    'durationMinutes',
+    'negativeMarking',
+    'showOnHomepage',
+    'isPublished',
+    'instructions',
+    'questionIds',
+  ];
+  const updates: Record<string, unknown> = {};
+  for (const key of allowed) {
+    if (req.body[key] !== undefined) updates[key] = req.body[key];
+  }
+
+  if (updates.isPublished === true) {
+    updates.status = 'published';
+    updates.isLive = true;
+    updates.publishedAt = new Date();
+  } else if (updates.isPublished === false) {
+    updates.status = 'draft';
+    updates.isLive = false;
+  }
+
+  const test = await Test.findByIdAndUpdate(req.params.id, updates, { new: true });
   if (!test) throw new ApiError(404, 'Test not found');
   res.json({ success: true, data: test });
 });
@@ -228,7 +286,7 @@ export const uploadStudyMaterial = asyncHandler(async (req: AuthRequest, res: Re
 
   const material = await StudyMaterial.create({
     title,
-    slug: slugify(title),
+    slug: `${slugify(title)}-${Date.now().toString(36)}`,
     type: type ?? 'pdf_notes',
     fileUrl,
     description,
@@ -257,6 +315,26 @@ export const listStudyMaterialsAdmin = asyncHandler(async (req: AuthRequest, res
     .lean();
 
   res.json({ success: true, data: materials });
+});
+
+export const updateStudyMaterial = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const allowed = ['title', 'description', 'year', 'isActive', 'requiredPlan'];
+  const updates: Record<string, unknown> = {};
+  for (const key of allowed) {
+    if (req.body[key] !== undefined) updates[key] = req.body[key];
+  }
+
+  const material = await StudyMaterial.findByIdAndUpdate(req.params.id, updates, { new: true })
+    .populate('examId', 'name slug')
+    .lean();
+  if (!material) throw new ApiError(404, 'Material not found');
+  res.json({ success: true, data: material });
+});
+
+export const deleteStudyMaterial = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const material = await StudyMaterial.findByIdAndDelete(req.params.id);
+  if (!material) throw new ApiError(404, 'Material not found');
+  res.json({ success: true, message: 'Material deleted' });
 });
 
 export const uploadCurrentAffair = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -306,4 +384,72 @@ export const listCurrentAffairsAdmin = asyncHandler(async (req: AuthRequest, res
     .lean();
 
   res.json({ success: true, data: affairs });
+});
+
+export const listBlogsAdmin = asyncHandler(async (_req: AuthRequest, res: Response) => {
+  const blogs = await Blog.find().sort({ createdAt: -1 }).lean();
+  res.json({ success: true, data: blogs });
+});
+
+export const createBlog = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { title, excerpt, content, imageUrl, author, category, isPublished, showOnHomepage } =
+    req.body;
+  if (!title || !content) throw new ApiError(400, 'Title and content are required');
+
+  const publishNow = isPublished === true;
+  const blog = await Blog.create({
+    title,
+    slug: slugify(title),
+    excerpt,
+    content,
+    imageUrl,
+    author,
+    category,
+    isPublished: publishNow,
+    showOnHomepage: showOnHomepage ?? publishNow,
+    publishedAt: publishNow ? new Date() : undefined,
+    createdBy: req.user!.id,
+  });
+
+  res.status(201).json({ success: true, data: blog });
+});
+
+export const updateBlog = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const allowed = [
+    'title',
+    'excerpt',
+    'content',
+    'imageUrl',
+    'author',
+    'category',
+    'isPublished',
+    'showOnHomepage',
+  ];
+  const updates: Record<string, unknown> = {};
+  for (const key of allowed) {
+    if (req.body[key] !== undefined) updates[key] = req.body[key];
+  }
+
+  if (updates.isPublished === true) {
+    updates.publishedAt = new Date();
+  }
+
+  const blog = await Blog.findByIdAndUpdate(req.params.id, updates, { new: true });
+  if (!blog) throw new ApiError(404, 'Blog not found');
+  res.json({ success: true, data: blog });
+});
+
+export const publishBlog = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { showOnHomepage } = req.body ?? {};
+  const blog = await Blog.findByIdAndUpdate(
+    req.params.id,
+    {
+      isPublished: true,
+      showOnHomepage: showOnHomepage !== undefined ? showOnHomepage : true,
+      publishedAt: new Date(),
+    },
+    { new: true }
+  );
+  if (!blog) throw new ApiError(404, 'Blog not found');
+  res.json({ success: true, data: blog });
 });

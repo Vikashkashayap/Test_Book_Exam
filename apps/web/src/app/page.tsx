@@ -1,8 +1,11 @@
 import Link from 'next/link';
-import { ArrowRight, BarChart3, Bot, BookOpen, Trophy, Zap } from 'lucide-react';
+import { BarChart3, Bot, BookOpen, Trophy, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ExamCategoriesSection } from '@/components/landing/ExamCategoriesSection';
+import { BlogsSection } from '@/components/landing/BlogsSection';
+import { HeroSection } from '@/components/landing/HeroSection';
+import { WhatsAppWidget } from '@/components/landing/WhatsAppWidget';
 
 const features = [
   {
@@ -27,104 +30,74 @@ const features = [
   },
 ];
 
-const stats = [
-  { value: '10K+', label: 'Questions' },
-  { value: '500+', label: 'Mock Tests' },
-  { value: '50K+', label: 'Students' },
-  { value: '98%', label: 'Satisfaction' },
-];
-
 export default function LandingPage() {
   return (
+    <>
     <main className="overflow-x-hidden">
-      <section className="relative overflow-hidden bg-hero-pattern text-white">
-        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
-        <div className="container relative mx-auto px-4 py-24 md:py-32">
-          <div className="mx-auto max-w-3xl text-center">
-            <span className="inline-block rounded-full bg-white/10 px-4 py-1.5 text-sm font-medium backdrop-blur mb-6">
-              MentorsDaily ExamPrep Pro
-            </span>
-            <h1 className="text-4xl font-bold tracking-tight md:text-6xl lg:text-7xl">
-              Crack SSC, Banking, UPSC &{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-purple-200">
-                40+ Govt Exams
-              </span>
-            </h1>
-            <p className="mt-6 text-lg text-blue-100 md:text-xl">
-              Full-length mocks, AI-powered analysis, current affairs, and an exam interface built
-              like Testbook & Oliveboard — all in one platform.
+      <HeroSection />
+
+      <ExamCategoriesSection />
+
+      <section id="features" className="bg-[#071428] py-16 sm:py-20">
+        <div className="container mx-auto px-6 sm:px-8 md:px-10 lg:px-14">
+          <div className="mb-10 text-center sm:mb-12">
+            <h2 className="text-3xl font-bold text-white sm:text-4xl">
+              Everything you need to rank higher
+            </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-base text-blue-100/75 sm:mt-4 sm:text-lg">
+              From daily quizzes to AI mentorship — designed for serious exam preparation.
             </p>
-            <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/register">
-                <Button size="lg" className="bg-white text-primary hover:bg-white/90 w-full sm:w-auto">
-                  Start Free <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-              <Link href="/pricing">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-2 border-white/50 bg-transparent text-white hover:bg-white/15 hover:text-white w-full sm:w-auto"
-                >
-                  View Plans
-                </Button>
-              </Link>
-            </div>
           </div>
-          <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-            {stats.map((s) => (
-              <div key={s.label} className="text-center">
-                <div className="text-3xl font-bold">{s.value}</div>
-                <div className="text-sm text-blue-200">{s.label}</div>
-              </div>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6 lg:grid-cols-4">
+            {features.map((f) => (
+              <Card
+                key={f.title}
+                className="border border-white/10 bg-[#0d1f3c]/90 text-white shadow-lg shadow-black/20 transition-shadow hover:border-sky-400/25 hover:shadow-xl"
+              >
+                <CardHeader className="space-y-4">
+                  <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-xl bg-sky-500/15 ring-1 ring-sky-400/20">
+                    <f.icon className="h-6 w-6 text-sky-300" />
+                  </div>
+                  <CardTitle className="text-lg text-white">{f.title}</CardTitle>
+                  <CardDescription className="text-sm leading-relaxed text-blue-100/70">
+                    {f.description}
+                  </CardDescription>
+                </CardHeader>
+              </Card>
             ))}
           </div>
         </div>
       </section>
 
-      <ExamCategoriesSection />
+      <BlogsSection />
 
-      <section id="features" className="container mx-auto px-4 py-20">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold">Everything you need to rank higher</h2>
-          <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-            From daily quizzes to AI mentorship — designed for serious exam preparation.
-          </p>
-        </div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {features.map((f) => (
-            <Card key={f.title} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-              <CardHeader>
-                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-2">
-                  <f.icon className="h-6 w-6 text-primary" />
-                </div>
-                <CardTitle className="text-lg">{f.title}</CardTitle>
-                <CardDescription>{f.description}</CardDescription>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section className="bg-muted/50 py-20">
-        <div className="container mx-auto px-4">
-          <Card className="overflow-hidden border-0 shadow-2xl">
+      <section className="bg-[#050f1f] py-16 sm:py-20">
+        <div className="container mx-auto px-6 sm:px-8 md:px-10 lg:px-14">
+          <Card className="overflow-hidden border border-white/10 bg-[#0d1f3c]/90 text-white shadow-2xl shadow-black/30">
             <div className="grid md:grid-cols-2">
-              <CardContent className="p-8 md:p-12 flex flex-col justify-center">
-                <Zap className="h-10 w-10 text-accent mb-4" />
-                <h3 className="text-2xl font-bold">AI analyzes every test you take</h3>
-                <p className="text-muted-foreground mt-3">
+              <CardContent className="flex flex-col justify-center p-8 md:p-12">
+                <Zap className="mb-4 h-10 w-10 text-sky-300" />
+                <h3 className="text-2xl font-bold text-white sm:text-3xl">
+                  AI analyzes every test you take
+                </h3>
+                <p className="mt-3 text-base leading-relaxed text-blue-100/75 sm:text-lg">
                   Get strengths, weaknesses, a 7-day study plan, and suggested mocks — automatically
                   after each attempt.
                 </p>
                 <Link href="/register" className="mt-6">
-                  <Button>Try AI Analysis</Button>
+                  <Button className="rounded-full bg-white px-8 font-semibold text-[#0b3d91] hover:bg-white/90">
+                    Try AI Analysis
+                  </Button>
                 </Link>
               </CardContent>
-              <div className="bg-gradient-to-br from-primary/20 to-accent/20 p-8 md:p-12 flex items-center justify-center min-h-[280px]">
-                <div className="space-y-3 w-full max-w-sm">
+              <div className="flex min-h-[280px] items-center justify-center bg-gradient-to-br from-sky-500/10 to-blue-600/10 p-8 md:p-12">
+                <div className="w-full max-w-sm space-y-3">
                   {['Strong in Quant', 'Weak in Reasoning', 'Practice 3 topic tests'].map((t, i) => (
-                    <div key={t} className="rounded-lg bg-card p-4 shadow text-sm font-medium animate-pulse" style={{ animationDelay: `${i * 150}ms` }}>
+                    <div
+                      key={t}
+                      className="animate-pulse rounded-lg border border-white/10 bg-[#071428]/80 p-4 text-sm font-medium text-blue-100"
+                      style={{ animationDelay: `${i * 150}ms` }}
+                    >
                       {t}
                     </div>
                   ))}
@@ -135,5 +108,7 @@ export default function LandingPage() {
         </div>
       </section>
     </main>
+    <WhatsAppWidget />
+    </>
   );
 }

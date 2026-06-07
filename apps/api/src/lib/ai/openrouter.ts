@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { MASTER_SYSTEM_PROMPT, buildQuestionUserPrompt } from './systemPrompt';
+import { MASTER_SYSTEM_PROMPT, buildQuestionUserPrompt, buildPyqQuestionUserPrompt } from './systemPrompt';
 import { getExamProfile, formatDifficultyLabel } from './examProfiles';
 import { computeQuestionHash } from './questionHash';
 import { env } from '../../config/env';
@@ -387,6 +387,7 @@ async function generateBatch(params: {
   categorySlug: string;
   subject: string;
   topic?: string;
+  year?: number;
   difficulty: 'easy' | 'medium' | 'hard' | 'mixed';
   excludeHashes?: string[];
   excludeQuestions?: string[];
@@ -395,15 +396,25 @@ async function generateBatch(params: {
   const model = params.model ?? DEFAULT_OPENROUTER_MODEL;
   const profile = getExamProfile(params.examSlug, params.categorySlug);
   const systemPrompt = buildSystemPrompt(params.examSlug, params.categorySlug);
-  const userPrompt = buildQuestionUserPrompt({
-    examName: profile.name,
-    pattern: profile.pattern,
-    subject: params.subject,
-    topic: params.topic ?? 'General',
-    difficulty: formatDifficultyLabel(params.difficulty),
-    count: params.count,
-    excludeQuestions: params.excludeQuestions,
-  });
+  const userPrompt = params.year
+    ? buildPyqQuestionUserPrompt({
+        examName: profile.name,
+        pattern: profile.pattern,
+        subject: params.subject,
+        year: params.year,
+        difficulty: formatDifficultyLabel(params.difficulty),
+        count: params.count,
+        excludeQuestions: params.excludeQuestions,
+      })
+    : buildQuestionUserPrompt({
+        examName: profile.name,
+        pattern: profile.pattern,
+        subject: params.subject,
+        topic: params.topic ?? 'General',
+        difficulty: formatDifficultyLabel(params.difficulty),
+        count: params.count,
+        excludeQuestions: params.excludeQuestions,
+      });
 
   const maxTokens = estimateMaxTokens(params.count);
   const result = await chatCompletionWithRetry(
@@ -426,15 +437,25 @@ async function generateBatch(params: {
 
   // One small retry only when nothing was parseable
   if (!raw.length) {
-    const onePrompt = buildQuestionUserPrompt({
-      examName: profile.name,
-      pattern: profile.pattern,
-      subject: params.subject,
-      topic: params.topic ?? 'General',
-      difficulty: formatDifficultyLabel(params.difficulty),
-      count: 1,
-      excludeQuestions: params.excludeQuestions,
-    });
+    const onePrompt = params.year
+      ? buildPyqQuestionUserPrompt({
+          examName: profile.name,
+          pattern: profile.pattern,
+          subject: params.subject,
+          year: params.year,
+          difficulty: formatDifficultyLabel(params.difficulty),
+          count: 1,
+          excludeQuestions: params.excludeQuestions,
+        })
+      : buildQuestionUserPrompt({
+          examName: profile.name,
+          pattern: profile.pattern,
+          subject: params.subject,
+          topic: params.topic ?? 'General',
+          difficulty: formatDifficultyLabel(params.difficulty),
+          count: 1,
+          excludeQuestions: params.excludeQuestions,
+        });
     const retry = await chatCompletionWithRetry(
       systemPrompt,
       onePrompt,
@@ -468,6 +489,7 @@ export interface GenerateMCQsParams {
   categorySlug: string;
   subject: string;
   topic?: string;
+  year?: number;
   difficulty: 'easy' | 'medium' | 'hard' | 'mixed';
   excludeHashes?: string[];
   model?: string;
@@ -506,6 +528,7 @@ export async function generateMCQs(params: GenerateMCQsParams): Promise<Generati
       categorySlug: params.categorySlug,
       subject: params.subject,
       topic: params.topic,
+      year: params.year,
       difficulty: params.difficulty,
       excludeQuestions: recentQuestions,
       model: params.model,

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { api, ApiSuccess } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 type PricingPlan = {
   planId: string;
@@ -23,6 +24,9 @@ type PricingData = {
   subtitle: string;
   plans: PricingPlan[];
 };
+
+const accentTextClass =
+  'bg-gradient-to-r from-sky-300 to-blue-400 bg-clip-text text-transparent';
 
 declare global {
   interface Window {
@@ -91,7 +95,7 @@ export default function PricingPage() {
           key: res.data.keyId,
           amount: res.data.amount,
           currency: 'INR',
-          name: 'MentorsDaily ExamPrep Pro',
+          name: 'Abhyas by MentorsDaily ExamPrep Pro',
           description: `${res.data.planName ?? planId} subscription`,
           order_id: res.data.orderId,
           handler: async (response: {
@@ -106,7 +110,7 @@ export default function PricingPage() {
             router.push('/dashboard');
           },
           prefill: { email: user.email, name: user.name },
-          theme: { color: '#3b82f6' },
+          theme: { color: '#38bdf8' },
         });
         rzp.open();
       };
@@ -121,67 +125,90 @@ export default function PricingPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="flex min-h-[50vh] items-center justify-center bg-[#071428]">
+        <Loader2 className="h-6 w-6 animate-spin text-sky-300" />
       </div>
     );
   }
 
   if (!pricing?.plans?.length) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center text-muted-foreground">
+      <div className="container mx-auto bg-[#071428] px-4 py-16 text-center text-blue-100/70">
         Pricing is not available right now. Please check back later.
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto overflow-x-hidden px-4 py-12 sm:py-16">
-      <div className="mb-10 text-center sm:mb-12">
-        <h1 className="text-3xl font-bold sm:text-4xl">{pricing.title}</h1>
-        <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground sm:text-base">
-          {pricing.subtitle}
-        </p>
-      </div>
+    <div className="min-h-screen bg-[#071428] text-white">
+      <div className="container mx-auto overflow-x-hidden px-6 py-12 sm:px-8 sm:py-16 md:px-10 lg:px-14">
+        <div className="mb-10 text-center sm:mb-12">
+          <h1 className="text-3xl font-bold sm:text-4xl">
+            Simple,{' '}
+            <span className={accentTextClass}>transparent pricing</span>
+          </h1>
+          <p className="mx-auto mt-3 max-w-xl text-sm text-blue-100/75 sm:mt-4 sm:text-base">
+            {pricing.subtitle}
+          </p>
+        </div>
 
-      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-        {pricing.plans.map((plan) => (
-          <Card
-            key={plan.planId}
-            className={plan.popular ? 'border-primary shadow-lg lg:scale-105' : ''}
-          >
-            <CardHeader>
-              {plan.popular && <Badge className="mb-2 w-fit">Most Popular</Badge>}
-              <CardTitle>{plan.name}</CardTitle>
-              <CardDescription>
-                <span className="text-3xl font-bold text-foreground">₹{plan.price}</span>
-                {plan.price > 0 && <span className="text-muted-foreground">/month</span>}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-            <CardFooter>
-              <Button
-                className="min-h-[44px] w-full"
-                variant={plan.popular ? 'default' : 'outline'}
-                onClick={() => subscribe(plan.planId, plan.price)}
-                disabled={payLoading === plan.planId}
-              >
-                {payLoading === plan.planId
-                  ? 'Processing...'
-                  : plan.ctaText || (plan.price === 0 ? 'Get Started' : 'Subscribe')}
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+          {pricing.plans.map((plan) => (
+            <Card
+              key={plan.planId}
+              className={cn(
+                'border bg-[#0d1f3c]/90 text-white shadow-lg shadow-black/20 transition-all hover:shadow-xl',
+                plan.popular
+                  ? 'border-sky-400/50 shadow-sky-950/20 lg:scale-105'
+                  : 'border-white/10 hover:border-sky-400/25'
+              )}
+            >
+              <CardHeader>
+                {plan.popular && (
+                  <Badge className="mb-2 w-fit border-0 bg-gradient-to-r from-sky-300 to-blue-400 text-[#071428] hover:from-sky-200 hover:to-blue-300">
+                    Most Popular
+                  </Badge>
+                )}
+                <CardTitle className={cn('text-xl', plan.popular && accentTextClass)}>
+                  {plan.name}
+                </CardTitle>
+                <CardDescription className="text-blue-100/70">
+                  <span className={cn('text-3xl font-bold', plan.popular ? accentTextClass : 'text-white')}>
+                    ₹{plan.price}
+                  </span>
+                  {plan.price > 0 && <span className="text-blue-200/60">/month</span>}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2.5">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-blue-100/85">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-sky-400" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+              <CardFooter>
+                <Button
+                  className={cn(
+                    'min-h-[44px] w-full rounded-full font-semibold',
+                    plan.popular
+                      ? 'bg-gradient-to-r from-sky-300 to-blue-400 text-[#071428] hover:from-sky-200 hover:to-blue-300'
+                      : 'border-2 border-sky-400/40 bg-sky-500/10 text-sky-100 hover:bg-sky-500/20 hover:text-white'
+                  )}
+                  variant={plan.popular ? 'default' : 'outline'}
+                  onClick={() => subscribe(plan.planId, plan.price)}
+                  disabled={payLoading === plan.planId}
+                >
+                  {payLoading === plan.planId
+                    ? 'Processing...'
+                    : plan.ctaText || (plan.price === 0 ? 'Get Started' : 'Subscribe')}
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   );

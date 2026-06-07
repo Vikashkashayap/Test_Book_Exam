@@ -13,10 +13,10 @@ import onboardingRoutes from './onboarding.routes';
 import examManagementRoutes from './exam-management.routes';
 import aiGeneratorRoutes from './ai-generator.routes';
 import aiTestRoutes, { studentAiTestRoutes } from './ai-test.routes';
-import aiQuestionsRoutes from './ai-questions.routes';
 import questionBankRoutes from './question-bank.routes';
 import testBuilderRoutes from './test-builder.routes';
 import feedbackRoutes, { adminFeedbackRouter } from './feedback.routes';
+import publicRoutes from './public.routes';
 
 const router = Router();
 
@@ -31,7 +31,6 @@ router.use('/admin', adminRoutes);
 router.use('/admin/exam-management', examManagementRoutes);
 router.use('/admin/ai-generator', aiGeneratorRoutes);
 router.use('/admin/ai-tests', aiTestRoutes);
-router.use('/admin/ai-questions', aiQuestionsRoutes);
 router.use('/admin/question-bank', questionBankRoutes);
 router.use('/admin/tests', testBuilderRoutes);
 router.use('/student', studentAiTestRoutes);
@@ -40,6 +39,7 @@ router.use('/bookmarks', bookmarkRoutes);
 router.use('/content', contentRoutes);
 router.use('/feedback', feedbackRoutes);
 router.use('/admin/feedback', adminFeedbackRouter);
+router.use('/public', publicRoutes);
 
 router.get('/health', (_req, res) => {
   res.json({

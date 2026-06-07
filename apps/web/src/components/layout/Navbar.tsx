@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { User, Shield, Menu, X } from 'lucide-react';
@@ -10,6 +11,8 @@ import { cn } from '@/lib/utils';
 import { isAdminRole } from '@/lib/auth-utils';
 
 const publicLinks = [
+  { href: '/pyq', label: 'PYQ' },
+  { href: '/#blogs', label: 'Blogs' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/#features', label: 'Features' },
 ];
@@ -39,18 +42,26 @@ export function Navbar() {
     <>
       <header
         className={cn(
-          'sticky top-0 z-50 border-b backdrop-blur-md',
+          'sticky top-[var(--top-offer-height,0px)] z-50 border-b backdrop-blur-md',
           isMarketing
             ? 'border-slate-200/70 bg-white/90 shadow-[0_1px_3px_rgba(15,23,42,0.06)] backdrop-blur-xl'
             : 'border-border bg-background/80'
         )}
       >
-        <div className="container relative mx-auto flex h-16 items-center justify-between px-4">
-          <Link href={homeHref} className="z-10 flex items-center gap-2.5 text-xl font-bold">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-sm font-bold text-primary-foreground shadow-sm">
-              EP
-            </span>
-            <span className="hidden tracking-tight sm:inline">MentorsDaily</span>
+        <div className="container relative mx-auto flex h-16 items-center justify-between px-5 sm:px-6 lg:px-10">
+          <Link
+            href={homeHref}
+            aria-label="MentorsDaily"
+            className="z-10 flex shrink-0 items-center rounded-lg px-2 py-1 sm:px-3 sm:py-1.5"
+          >
+            <Image
+              src="/branding/mentorsdaily-logo.png"
+              alt="MentorsDaily"
+              width={176}
+              height={44}
+              priority
+              className="h-8 w-auto object-contain sm:h-9 md:h-10"
+            />
           </Link>
 
           {navLinks.length > 0 && (

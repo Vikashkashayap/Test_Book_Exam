@@ -8,7 +8,8 @@ export interface IScheduledMockJob extends Document {
   difficulty: 'easy' | 'medium' | 'hard' | 'mixed';
   questionCount: number;
   durationMinutes: number;
-  mockType: 'subject_based' | 'subject_test' | 'full_length' | 'practice_set';
+  mockType: 'subject_based' | 'subject_test' | 'full_length' | 'practice_set' | 'pyq';
+  year?: number;
   avoidReuse: boolean;
   autoGenerate: boolean;
   scheduledAt: Date;
@@ -36,9 +37,10 @@ const ScheduledMockJobSchema = new Schema<IScheduledMockJob>(
     durationMinutes: { type: Number, required: true },
     mockType: {
       type: String,
-      enum: ['subject_based', 'subject_test', 'full_length', 'practice_set'],
+      enum: ['subject_based', 'subject_test', 'full_length', 'practice_set', 'pyq'],
       default: 'full_length',
     },
+    year: Number,
     avoidReuse: { type: Boolean, default: true },
     autoGenerate: { type: Boolean, default: true },
     scheduledAt: { type: Date, required: true, index: true },

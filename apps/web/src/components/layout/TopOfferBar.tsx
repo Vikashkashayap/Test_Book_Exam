@@ -38,6 +38,17 @@ export function TopOfferBar() {
       .catch(() => setOffer(null));
   }, []);
 
+  useEffect(() => {
+    if (!offer || dismissed) {
+      document.documentElement.style.setProperty('--top-offer-height', '0px');
+      return;
+    }
+    document.documentElement.style.setProperty('--top-offer-height', '44px');
+    return () => {
+      document.documentElement.style.setProperty('--top-offer-height', '0px');
+    };
+  }, [offer, dismissed]);
+
   function handleDismiss() {
     if (!offer) return;
     localStorage.setItem(DISMISS_KEY, `${offer._id}:${offer.updatedAt ?? ''}`);

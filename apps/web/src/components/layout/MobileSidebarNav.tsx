@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Menu, X, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { isSidebarLinkActive } from '@/lib/sidebar-utils';
 
 export interface SidebarLinkItem {
   href: string;
@@ -15,13 +16,12 @@ export interface SidebarLinkItem {
 
 interface Props {
   links: SidebarLinkItem[];
-  title: string;
+  title?: string;
   footerLink?: { href: string; label: string; icon: LucideIcon };
 }
 
 function isLinkActive(pathname: string, href: string) {
-  if (href === '/admin' || href === '/dashboard') return pathname === href;
-  return pathname === href || pathname.startsWith(`${href}/`);
+  return isSidebarLinkActive(pathname, href);
 }
 
 export function MobileSidebarNav({ links, title, footerLink }: Props) {
@@ -41,7 +41,7 @@ export function MobileSidebarNav({ links, title, footerLink }: Props) {
         >
           <Menu className="h-5 w-5" />
         </Button>
-        <span className="truncate text-sm font-semibold">{title}</span>
+        {title ? <span className="truncate text-sm font-semibold">{title}</span> : null}
       </div>
 
       {open && (
@@ -54,7 +54,11 @@ export function MobileSidebarNav({ links, title, footerLink }: Props) {
           />
           <aside className="absolute left-0 top-0 flex h-full w-[min(100%,280px)] flex-col border-r bg-card shadow-xl">
             <div className="flex items-center justify-between border-b p-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
+              {title ? (
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
+              ) : (
+                <p className="text-sm font-semibold">Menu</p>
+              )}
               <Button
                 variant="ghost"
                 size="icon"

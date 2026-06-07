@@ -31,3 +31,28 @@ Generate exactly ${params.count} bilingual MCQs. JSON only: {"questions":[...]}`
 
   return prompt;
 }
+
+export function buildPyqQuestionUserPrompt(params: {
+  examName: string;
+  pattern: string;
+  subject: string;
+  year: number;
+  difficulty: string;
+  count: number;
+  excludeQuestions?: string[];
+}): string {
+  let prompt = `${params.examName} | ${params.pattern} | Subject: ${params.subject}
+Generate exactly ${params.count} bilingual MCQs in the style of ${params.examName} ${params.year} previous year paper (PYQ).
+Match difficulty, topic mix, and question framing typical of that year's actual exam — statement-based where applicable.
+Topic context: PYQ ${params.year} | ${params.difficulty}
+JSON only: {"questions":[...]}`;
+
+  if (params.excludeQuestions?.length) {
+    prompt += `\nAvoid repeating:\n${params.excludeQuestions
+      .slice(-8)
+      .map((q, i) => `${i + 1}. ${q.slice(0, 80)}`)
+      .join('\n')}`;
+  }
+
+  return prompt;
+}

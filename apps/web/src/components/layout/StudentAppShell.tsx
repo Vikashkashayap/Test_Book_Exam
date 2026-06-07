@@ -22,7 +22,7 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
   return (
     <RequireAuth portal="student">
       <ScrollLock />
-      <div className="flex h-[calc(100dvh-4rem)] min-h-0 flex-col overflow-hidden">
+      <div className="flex h-[calc(100dvh-4rem-var(--top-offer-height,0px))] max-h-[calc(100dvh-4rem-var(--top-offer-height,0px))] min-h-0 flex-col overflow-hidden">
         <MobileSidebarNav links={studentSidebarLinks} title="Student Portal" />
         <div className="flex min-h-0 flex-1 overflow-hidden">
           <DashboardSidebar />

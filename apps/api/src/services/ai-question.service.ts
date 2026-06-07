@@ -45,6 +45,7 @@ export async function generateAndSaveQuestions(params: {
   questionCount: number;
   createdBy: string;
   aiModel?: string;
+  year?: number;
 }) {
   if (!isOpenRouterConfigured()) {
     throw new ApiError(503, 'OPENROUTER_API_KEY is not configured');
@@ -76,6 +77,7 @@ export async function generateAndSaveQuestions(params: {
       categorySlug: category.slug,
       subject: params.subject,
       topic: params.topic,
+      year: params.year,
       difficulty: params.difficulty,
       excludeHashes: existingHashes,
       model,
@@ -243,6 +245,7 @@ export async function ensureBankQuestions(params: {
   questionCount: number;
   createdBy: string;
   avoidReuse?: boolean;
+  year?: number;
 }): Promise<{ generated: number; tokenUsage: TokenUsage }> {
   if (!isOpenRouterConfigured()) {
     throw new ApiError(503, 'OPENROUTER_API_KEY is not configured. Add OPENROUTER_API_KEY to enable auto-generation.');
@@ -285,14 +288,17 @@ export async function ensureBankQuestions(params: {
     let attempts = 0;
     const maxAttempts = Math.ceil(needed / 3) + 2;
 
+    const topic = params.year ? `PYQ ${params.year}` : 'General';
+
     const runBatch = async (count: number) => {
       const result = await generateAndSaveQuestions({
         examId: params.examId,
         subject,
-        topic: 'General',
+        topic,
         difficulty: diff,
         questionCount: count,
         createdBy: params.createdBy,
+        year: params.year,
       });
       totalGenerated += result.analytics.questionsSaved;
       totalUsage.promptTokens += result.analytics.tokenUsage.promptTokens;
