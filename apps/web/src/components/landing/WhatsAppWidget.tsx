@@ -24,17 +24,17 @@ export function WhatsAppWidget() {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Chat with our experts on WhatsApp"
-      className="group fixed bottom-5 right-4 z-[9999] flex items-center sm:bottom-6 sm:right-6"
+      className="group fixed bottom-4 right-3 z-50 flex items-center sm:bottom-6 sm:right-6"
     >
-      <span className="relative z-10 flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full bg-[#25D366] shadow-[0_2px_12px_rgba(37,211,102,0.45)] ring-4 ring-white transition-transform group-hover:scale-105 sm:h-14 sm:w-14">
-        <WhatsAppIcon className="h-[26px] w-[26px] text-white sm:h-7 sm:w-7" />
+      <span className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#25D366] shadow-[0_2px_12px_rgba(37,211,102,0.45)] ring-2 ring-white transition-transform group-hover:scale-105 sm:h-14 sm:w-14 sm:ring-4">
+        <WhatsAppIcon className="h-5 w-5 text-white sm:h-7 sm:w-7" />
       </span>
 
-      <span className="-ml-5 flex min-w-0 flex-col justify-center rounded-full bg-gradient-to-r from-[#e8f8ef] to-[#f4fbf7] py-2.5 pl-7 pr-4 shadow-[0_4px_24px_rgba(0,0,0,0.12)] ring-1 ring-black/[0.04] transition-transform group-hover:scale-[1.02] sm:py-3 sm:pl-8 sm:pr-5">
-        <span className="whitespace-nowrap text-[13px] font-bold leading-tight text-[#1a1a1a] sm:text-sm">
+      <span className="hidden min-w-0 flex-col justify-center rounded-full bg-gradient-to-r from-[#e8f8ef] to-[#f4fbf7] py-3 pl-8 pr-5 shadow-[0_4px_24px_rgba(0,0,0,0.12)] ring-1 ring-black/[0.04] transition-transform group-hover:scale-[1.02] sm:-ml-5 sm:flex">
+        <span className="whitespace-nowrap text-sm font-bold leading-tight text-[#1a1a1a]">
           Got any Queries?
         </span>
-        <span className="mt-0.5 max-w-[200px] text-[11px] leading-snug text-[#4a5568] sm:max-w-none sm:whitespace-nowrap sm:text-xs">
+        <span className="mt-0.5 whitespace-nowrap text-xs leading-snug text-[#4a5568]">
           Quickly chat with our Experts on WhatsApp!
         </span>
       </span>
