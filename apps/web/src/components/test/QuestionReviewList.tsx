@@ -133,7 +133,7 @@ export function QuestionReviewList({ questions }: { questions: QuestionReviewIte
                     </Badge>
                   )}
                   {status === 'wrong' && (
-                    <Badge variant="destructive" className="gap-1 text-xs">
+                    <Badge className="gap-1 bg-red-500 text-xs text-white hover:bg-red-500">
                       <XCircle className="h-3 w-3" /> Wrong
                     </Badge>
                   )}
