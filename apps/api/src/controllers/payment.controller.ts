@@ -94,6 +94,6 @@ export const verifyPayment = asyncHandler(async (req: AuthRequest, res: Response
   res.json({ success: true, data: { subscription, payment } });
 });
 
-export const webhook = asyncHandler(async (req: Request, res: Response) => {
+export const webhook = asyncHandler(async (_req, res: Response) => {
   res.json({ success: true, received: true });
 });

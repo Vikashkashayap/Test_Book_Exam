@@ -285,7 +285,7 @@ export const getResult = asyncHandler(async (req: AuthRequest, res: Response) =>
     throw new ApiError(403, 'Access denied');
   }
 
-  const test = result.testId as {
+  const test = result.testId as unknown as {
     title: string;
     questionIds?: { toString(): string }[];
   } | null;

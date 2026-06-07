@@ -48,7 +48,10 @@ export const getPublicPricing = asyncHandler(async (_req, res: Response) => {
 
 export const getAdminPricing = asyncHandler(async (_req: AuthRequest, res: Response) => {
   const config = await getOrCreatePricingConfig();
-  res.json({ success: true, data: formatConfig(config.toObject()) });
+  res.json({
+    success: true,
+    data: formatConfig(config.toObject() as unknown as Record<string, unknown>),
+  });
 });
 
 export const upsertPricing = asyncHandler(async (req: AuthRequest, res: Response) => {
